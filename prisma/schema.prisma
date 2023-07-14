@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AuthUser {
+  id                  Int            @id @default(autoincrement())
+  nisp                String         @unique @db.VarChar(25)
+  password            String?
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  AuthUserRole        AuthUserRole[]
+  TravelDoc           TravelDoc[]
+  FileMaterialReceive FileMaterialReceive[]
+
+  @@map("auth_users")
+}
+
+model AuthRole {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique @db.VarChar(200)
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+  AuthUserRole AuthUserRole[]
+
+  @@map("auth_roles")
+}
+
+model AuthUserRole {
+  id           Int      @id @default(autoincrement())
+  auth_user    AuthUser @relation(fields: [auth_user_id], references: [id])
+  auth_role    AuthRole @relation(fields: [auth_role_id], references: [id])
+  auth_user_id Int
+  auth_role_id Int
+
+  @@map("auth_user_roles")
+}
+
+model Supplier {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(200)
+  email         String          @unique @db.VarChar(200)
+  phone         String          @unique @db.VarChar(13)
+  address       String          @db.Text
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  Material      Material[]
+  BatchMaterial BatchMaterial[]
+  Pallete       Pallete[]
+  Rack          Rack[]
+  TravelDoc     TravelDoc[]
+  Part          Part[]
+  @@map("suppliers")
+}
+
+model Material {
+  id              Int               @id @default(autoincrement())
+  material_number String            @unique @db.VarChar(200)
+  material_name   String            @db.VarChar(200)
+  supllier        Supplier          @relation(fields: [supplier_id], references: [id])
+  supplier_id     Int
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  MaterialReceive MaterialReceive[]
+  Part            Part[]
+
+  @@map("materials")
+}
+
+model BatchMaterial {
+  id                    Int               @id @default(autoincrement())
+  batch_material_number String            @unique @db.VarChar(200)
+  batch_material_name   String            @db.VarChar(200)
+  type                  String            @db.VarChar(200)
+  min_stock             Int
+  max_stock             Int
+  supllier              Supplier          @relation(fields: [supplier_id], references: [id])
+  supplier_id           Int
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
+  MaterialReceive       MaterialReceive[]
+  Part                  Part[]
+
+  @@map("batch_materials")
+}
+
+model Rack {
+  id               Int                @id @default(autoincrement())
+  rack_number      String             @unique @db.Char(200)
+  rack_name        String             @db.Char(200)
+  address          String             @db.Char(200)
+  type             String             @db.VarChar(200)
+  max_capacity     Int
+  supllier         Supplier           @relation(fields: [supplier_id], references: [id])
+  supplier_id      Int
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+  PlacementRack    PlacementRack[]
+
+  @@map("racks")
+}
+
+model Pallete {
+  id               Int                @id @default(autoincrement())
+  pallete_number   String             @unique @db.Char(200)
+  pallete_name     String             @db.Char(200)
+  address          String             @db.Char(200)
+  max_capacity     Int
+  supllier         Supplier           @relation(fields: [supplier_id], references: [id])
+  supplier_id      Int
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+
+  @@map("palletes")
+}
+
+model TravelDoc {
+  id                Int               @id @default(autoincrement())
+  number_travel_doc String            @unique @db.VarChar(200)
+  supllier          Supplier          @relation(fields: [supplier_id], references: [id])
+  auth_user         AuthUser          @relation(fields: [auth_user_id], references: [id])
+  file_material_receive FileMaterialReceive @relation(fields: [file_material_id], references: [id])
+  auth_user_id      Int
+  supplier_id       Int
+  file_material_id  Int
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  MaterialReceive   MaterialReceive[]
+
+  @@map("travel_docs")
+}
+
+model MaterialReceive {
+  id                    Int            @id @default(autoincrement())
+  arrival_date          DateTime       @db.Date
+  type                  String         @db.VarChar(200)
+  material              Material?      @relation(fields: [material_id], references: [id])
+  batch_material        BatchMaterial? @relation(fields: [batch_material_id], references: [id])
+  travel_doc            TravelDoc      @relation(fields: [travel_doc_id], references: [id])
+  file_material_receive FileMaterialReceive @relation(fields: [file_material_id], references: [id])
+  material_id           Int?
+  batch_material_id     Int?
+  travel_doc_id         Int
+  file_material_id      Int
+  weight                Int
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @updatedAt
+  PlacementRack         PlacementRack[]
+
+  @@map("material_receives")
+}
+
+model FileMaterialReceive {
+  id                Int               @id @default(autoincrement())
+  auth_user         AuthUser          @relation(fields: [user_id], references: [id])
+  MaterialReceive   MaterialReceive[]
+  TravelDoc         TravelDoc[]
+  user_id           Int
+  filename          String            @unique @db.VarChar(200)
+  original_filename String            @db.VarChar(200)
+  file_mime         String            @db.VarChar(200)
+  file_path         String            @db.VarChar(200)
+  file_extension    String            @db.VarChar(200)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+
+  @@map("file_material_receive")
+}
+
+model PlacementRack {
+  id                  Int             @id @default(autoincrement())
+  material_receive    MaterialReceive @relation(fields: [material_receive_id], references: [id])
+  rack                Rack            @relation(fields: [rack_id], references: [id])
+  material_receive_id Int             @unique
+  rack_id             Int
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+
+  @@map("placement_rack")
+}
+
+model Part {
+  id                  Int           @id @default(autoincrement())
+  part_number         String        @db.VarChar(200)
+  die_cavity          Int
+  cycle_time          Int
+  target_pcs_per_shit Int
+  part_weight         Int
+  runner              Int
+  dango               Int
+  min_stock           Int
+  max_stock           Int
+  quantity            Int
+  part_image          String?
+  supplier            Supplier      @relation(fields: [supplier_id], references: [id])
+  material            Material      @relation(fields: [material_id], references: [id])
+  batch_material      BatchMaterial @relation(fields: [batch_material_id], references: [id])
+  supplier_id         Int
+  material_id         Int
+  batch_material_id   Int
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+}
